@@ -1,162 +1,140 @@
-// E-Commerce 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-typedef struct Node{
-    char id[11];
-    int money;
-    struct Node* leftChild;
-    struct Node* rightChild;
-    struct Node* sub;
-}Node;
-
-Node *root[100000];
-
-Node* makeNode(char* id, int money){
-    Node* p = (Node*)malloc(sizeof(Node));
-    p->money = money;
-    strcpy(p->id, id);
-    p->leftChild = NULL;
-    p->rightChild = NULL;
-    p->sub = NULL;
+#include <bits/stdc++.h>
+using namespace std;
+#define MAXX 10000
+typedef struct node{
+	char ID[10];
+    char problem[10];
+    int hour,minute,second;
+	int status;
+	int point;
+	node *next;
+}node;
+node *data[MAXX];
+int totalSub = 0; //tong submission
+int totalErr = 0;
+node *makeNode(char *ID, char *problem , int hour, int minute, int second,int status, int point){
+    node *p = new node();
+    if(p == NULL) {
+        printf("Memory!"); 
+        exit(1);
+    }
+    strcpy(p->ID,ID); strcpy(p->problem,problem);
+    p->hour = hour; p->minute= minute; p->second = second;
+    p->status = status;
+    p->point = point;
+    p->next = NULL;
     return p;
 }
+void addNode(char *ID, char *problem,int hour,int minute,int second,int status,int point){
+    int k = atoi(&ID[1]);
+    if(data[k%MAXX] == NULL){
+        data[k%MAXX] = makeNode(ID,problem,hour, minute, second, status, point);
+        totalSub++;
+        totalErr+=status;
+        return;
+    }
+    node *cur = data[k%MAXX];
+    node *p =  makeNode(ID,problem,hour, minute, second, status, point);
+    p->next = data[k%MAXX];
+    data[k%MAXX] = p;
+    totalSub++;
+    totalErr+=status;
+    // return;
+}
+int numberErrorID(char *ID){
+    int k = atoi(&ID[1]);
+    if(data[k%MAXX] == NULL) return 0;
+    node *cur = data[k%MAXX];
+    int res = 0; 
+    while(cur!=NULL){
+        if(cur->status == 1) res++;
+        cur = cur->next;
+    }
+    return res;
+}
+int totalPoint(char *ID) {
+    int k = atoi(&ID[1]);
+    if (data[k % MAXX]==NULL) return 0;
+    node *cur = data[k%MAXX];
+    int maxP[100] = {0}; // luu diem toi da cho moi problem
+    while (cur != NULL) {
+        int index = atoi(&cur->problem[1]);
+        if (cur->point > maxP[index]) {
+            maxP[index] = cur->point;
+        }
+        cur = cur->next;
+    }
+    int res = 0;
+    for (int i = 0; i < 100; i++) {
+        res += maxP[i];
+    }
 
-Node* findBST(char* id, Node* r){
-    if(r == NULL) return NULL;
-    int c = strcmp(r->id, id);
-    if(c == 0) return r;
-    else if(c < 0){
-        return findBST(id, r->rightChild);
-    }
-    else{
-        return findBST(id, r->leftChild);
-    }
+    return res;
 }
 
-Node* insertBST(char *id, int money, Node* r){
-    if(r == NULL) return makeNode(id, money);
-    int c = strcmp(r->id, id);
-    if(c == 0){
-        r->money += money;
-        return r;
+int time(int hour, int minute, int second){
+    return hour*3600 + minute*60+ second;
+}
+int numbertime(int h1, int m1, int s1, int h2, int m2, int s2) {
+    int start_time = time(h1, m1, s1);
+    int end_time = time(h2, m2, s2);
+    int count = 0;
+    for (int i = 0; i < MAXX; i++) {
+        node *cur = data[i%MAXX];
+        while (cur != NULL) {
+            int submission_time = time(cur->hour, cur->minute, cur->second);
+            if (submission_time >= start_time && submission_time <= end_time) {
+                count++;
+            }
+            cur = cur->next;
+        }
     }
-    else if(c < 0){
-        r->rightChild = insertBST(id, money, r->rightChild);
-        return r;
-    }
-    else{
-        r->leftChild = insertBST(id, money, r->leftChild);
-        return r;
-    }
+    return count;
 }
-
-int hashFunction(char *id){
-    int code = 0;
-    int l = strlen(id);
-    for(int i = 0; i < l; i++){
-        code = (code * 256 + id[i]) % 100000;
-    }
-    return code;
-}
-
-Node *find(char* id){
-    int index = hashFunction(id);
-    Node *p = findBST(id, root[index]);
-    return p;
-}
-
-void insertNode(char *id, int money){
-    int index = hashFunction(id);
-    root[index] = insertBST(id, money, root[index]);
-}
-
-int hashTime(char *time){
-    int hour = (time[0] - '0') * 10 + time[1] - '0';
-    int minute = (time[3] - '0') * 10 + time[4] - '0';
-    int second = (time[6] - '0') * 10 + time[7] - '0';
-    return hour * 3600 + minute * 60 + second;
-}
-
 int main(){
-    char customerID[11];
-    char shopID[11];
-    char productID[11];
-    char timePoint[11];
-    int money;
-    int total = 0; // total_revenue
-    int n = 0; // total_number_orders
-    char cmd[50];
-    int a[86401]; 
-    int t[86401];
-    for(int i = 0; i < 86401; i++){
-        a[i] = 0;
-        t[i] = 0;
-    }
 
+    char ID[10];
+    char problem[10];
+    int hour,minute,second;
+	int status;
+    char temp[10];
+	int point;
+    string s;
+    char newLine[100];
     while(1){
-        scanf("%s", customerID);
-        if(strcmp(customerID, "#") == 0){
-            break;
-        }
-        else{
-            scanf("%s %d %s %s", productID, &money, shopID, timePoint);
-            insertNode(shopID, money);
-            Node* tmp = find(shopID);
-            tmp->sub = insertBST(customerID, money, tmp->sub);
-            n++;
-            total += money;
-            int k = hashTime(timePoint);
-            a[k] = a[k] + money;
-        }
+        fgets(newLine, sizeof(newLine), stdin);
+        newLine[strcspn(newLine, "\r\n")] = 0;
+        if(newLine[0]=='#' ) break;
+        sscanf(newLine, "%s %s %d:%d:%d %s %d", ID,problem,&hour,&minute,&second,temp,&point);
+        if(strcmp(temp,"ERR") == 0) status = 1; //err => them 1 don vi
+        else if(strcmp(temp,"OK") == 0) status = 0;
+        // printf("%s %s %d:%d:%d %s %d %d\n",ID,problem,hour,minute,second,temp,point,status);
+        addNode(ID,problem,hour,minute,second,status,point);
     }
-
-    for(int i = 1; i < 86401; i++){
-        t[i] = t[i-1] + a[i];
-    }
-
+    int h1,m1,s1,h2,m2,s2;
     while(1){
-        scanf("%s", cmd);
-        if(strcmp(cmd, "?total_number_orders") == 0){
-            printf("%d\n", n);
+        cin >> s;
+        if(s == "#") break;
+        else if(s == "?total_number_submissions"){
+            printf("%d\n",totalSub);
         }
-        if(strcmp(cmd, "?total_revenue") == 0){
-            printf("%d\n", total);
+        else if(s == "?number_error_submision"){
+            printf("%d\n",totalErr);
         }
-        if(strcmp(cmd, "?revenue_of_shop") == 0){
-            scanf("%s", shopID);
-            Node* p = find(shopID);
-            if(p != NULL){
-                printf("%d\n", p->money);
-            }
-            else{
-                printf("0\n");
-            }
+        else if(s == "?number_error_submision_of_user"){
+            scanf("%s ", ID);
+            int temp = numberErrorID(ID);
+            printf("%d\n",temp);
         }
-        if(strcmp(cmd, "?total_consume_of_customer_shop") == 0){
-            scanf("%s %s", customerID, shopID);
-            Node *p = find(shopID);
-            if(p != NULL){
-                Node *q = findBST(customerID, p->sub);
-                if(q != NULL){
-                    printf("%d\n", q->money);
-                }
-                else{
-                    printf("0\n");
-                }
-            }
-            else{
-                printf("0\n");
-            }
+        else if(s == "?total_point_of_user"){
+            scanf("%s ", ID);
+            int temp = totalPoint(ID);
+            printf("%d\n",temp);
         }
-        if(strcmp(cmd, "?total_revenue_in_period") == 0){
-            char start[11], end[11];
-            scanf("%s %s", start, end);
-            printf("%d\n", t[hashTime(end)] - t[hashTime(start) - 1]);
-        }
-        if(strcmp(cmd, "#") == 0){
-            break;
+        else if(s == "?number_submission_period"){
+            scanf("%d:%d:%d %d:%d:%d",&h1,&m1,&s1,&h2,&m2,&s2);
+            int temp = numbertime(h1,m1,s1,h2,m2,s2);
+            printf("%d\n",temp);
         }
     }
 }
